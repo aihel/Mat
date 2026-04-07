@@ -1,142 +1,94 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Lukarix olası sorular (dızladı</title>
-
+<title>LukarixMat sorular (42 syf</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
 <style>
-body {
-    margin: 0;
-    font-family: Arial;
-    background: #0f172a;
-    color: white;
-    text-align: center;
-}
-
-#login {
-    margin-top: 100px;
-}
-
-input {
-    padding: 10px;
-    border-radius: 10px;
-    border: none;
-    outline: none;
-}
-
-button {
-    padding: 10px 15px;
-    border-radius: 10px;
-    border: none;
-    background: #22c55e;
-    color: white;
-    cursor: pointer;
-}
-
-#viewer {
-    display: none;
-}
-
-canvas {
-    margin-top: 10px;
-    border-radius: 10px;
-}
-
-.controls {
-    margin-top: 10px;
-}
+body { text-align:center; font-family:Arial; background:#f0f0f0; }
+#pdf { border:1px solid #ccc; margin-top:20px; }
+button { margin: 2px; padding:5px 10px; cursor:pointer; }
 </style>
 </head>
 
-<body oncontextmenu="return false">
+<body>
 
-<div id="login">
-    <h2>PDF Giriş</h2>
-    <input type="password" id="password" placeholder="Şifre gir">
-    <button onclick="login()">Giriş Yap</button>
-</div>
+<h2>PDF Giriş</h2>
+<input type="password" id="sifre" placeholder="Şifre gir">
+<button onclick="kontrol()">Giriş</button>
 
-<div id="viewer">
-    <h2>Lukarixyz PDF Mat (Dızladı</h2>
+<br><br>
 
-    <div class="controls">
+<div id="viewer" style="display:none;">
+    <div>
         <button onclick="prevPage()">◀</button>
-        <span id="pageInfo"></span>
+        <span id="pageInfo">1 / 1</span>
         <button onclick="nextPage()">▶</button>
 
         <button onclick="zoomOut()">-</button>
         <button onclick="zoomIn()">+</button>
     </div>
-
-    <canvas id="pdf-render"></canvas>
+    <canvas id="pdf"></canvas>
 </div>
 
 <script>
-const correctPassword = "Lukarixyz";
+const PASSWORD = "Lukarixyz";
 
-function login() {
-    const input = document.getElementById("password").value;
-    if (input === correctPassword) {
-        document.getElementById("login").style.display = "none";
-        document.getElementById("viewer").style.display = "block";
-        loadPDF();
-    } else {
-        alert("Yanlış şifre!");
-    }
-}
-
-// PDF AYARLARI
 let pdfDoc = null,
     pageNum = 1,
     scale = 1.5,
-    canvas = document.getElementById('pdf-render'),
+    canvas = document.getElementById('pdf'),
     ctx = canvas.getContext('2d');
 
-function loadPDF() {
-    pdfjsLib.getDocument("LukarixSınavMatDızlamaKolej(1).pdf").promise.then(pdf => {
+function kontrol(){
+    let input = document.getElementById("sifre").value;
+    if(input === PASSWORD){
+        document.getElementById('viewer').style.display = "block";
+        loadPDF();
+    } else {
+        alert("Yanlış şifre!");
+        document.getElementById("sifre").value = "";
+    }
+}
+
+function loadPDF(){
+    pdfjsLib.getDocument("pdf.pdf").promise.then(pdf => {
         pdfDoc = pdf;
         renderPage(pageNum);
     });
 }
 
-function renderPage(num) {
+function renderPage(num){
     pdfDoc.getPage(num).then(page => {
-        const viewport = page.getViewport({ scale: scale });
-        canvas.height = viewport.height;
+        const viewport = page.getViewport({scale: scale});
         canvas.width = viewport.width;
-
-        page.render({
-            canvasContext: ctx,
-            viewport: viewport
-        });
-
+        canvas.height = viewport.height;
+        page.render({canvasContext: ctx, viewport: viewport});
         document.getElementById("pageInfo").innerText = num + " / " + pdfDoc.numPages;
     });
 }
 
-function nextPage() {
-    if (pageNum < pdfDoc.numPages) {
+function nextPage(){
+    if(pageNum < pdfDoc.numPages){
         pageNum++;
         renderPage(pageNum);
     }
 }
 
-function prevPage() {
-    if (pageNum > 1) {
+function prevPage(){
+    if(pageNum > 1){
         pageNum--;
         renderPage(pageNum);
     }
 }
 
-function zoomIn() {
+function zoomIn(){
     scale += 0.2;
     renderPage(pageNum);
 }
 
-function zoomOut() {
-    if (scale > 0.5) {
+function zoomOut(){
+    if(scale > 0.5){
         scale -= 0.2;
         renderPage(pageNum);
     }
