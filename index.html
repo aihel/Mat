@@ -1,98 +1,135 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>LukarixMat sorular (42 syf</title>
+<title>LukarixYZ (Dızladıgım pdf)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
-body { text-align:center; font-family:Arial; background:#f0f0f0; }
-#pdf { border:1px solid #ccc; margin-top:20px; }
-button { margin: 2px; padding:5px 10px; cursor:pointer; }
+body {
+    margin:0;
+    font-family:Arial;
+    background: linear-gradient(135deg,#0f2027,#2c5364);
+    color:white;
+    text-align:center;
+}
+
+/* LOGIN */
+#login {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:rgba(255,255,255,0.1);
+    padding:30px;
+    border-radius:15px;
+    backdrop-filter: blur(10px);
+}
+
+input {
+    padding:10px;
+    border-radius:10px;
+    border:none;
+}
+
+button {
+    padding:10px 20px;
+    margin-top:10px;
+    border:none;
+    border-radius:10px;
+    background:cyan;
+    cursor:pointer;
+}
+
+/* VIEWER */
+#viewer {
+    display:none;
+    padding-top:10px;
+}
+
+#pdfContainer {
+    width: 90vw;   /* Ekran genişliğinin %90'ı */
+    margin: 20px auto;
+}
+
+canvas {
+    width: 100% !important; /* Canvas ekran genişliğine uyumlu */
+    height: auto !important;
+    box-shadow:0 0 15px black;
+}
+
+/* TOOLBAR */
+.toolbar {
+    margin-top:10px;
+    margin-bottom:10px;
+}
 </style>
 </head>
-
 <body>
 
-<h2>PDF Giriş</h2>
-<input type="password" id="sifre" placeholder="Şifre gir">
-<button onclick="kontrol()">Giriş</button>
+<!-- LOGIN -->
+<div id="login">
+    <h2>🔐 Giriş yap buba</h2>
+    <input type="password" id="pass" placeholder="Şifre"><br>
+    <button onclick="login()">Giriş</button>
+    <p id="err" style="color:red;"></p>
+</div>
 
-<br><br>
-
-<div id="viewer" style="display:none;">
-    <div>
-        <button onclick="prevPage()">◀</button>
-        <span id="pageInfo">1 / 1</span>
-        <button onclick="nextPage()">▶</button>
-
-        <button onclick="zoomOut()">-</button>
-        <button onclick="zoomIn()">+</button>
+<!-- VIEWER -->
+<div id="viewer">
+    <div class="toolbar">
+        <button onclick="prevPage()">⬅ Önceki</button>
+        <span id="pageInfo"></span>
+        <button onclick="nextPage()">➡ Sonraki</button>
+        <button onclick="zoomIn()">🔍+</button>
+        <button onclick="zoomOut()">🔍-</button>
     </div>
-    <canvas id="pdf"></canvas>
+    <div id="pdfContainer"></div>
 </div>
 
 <script>
-const PASSWORD = "Lukarixyz";
+let pdfDoc=null;
+let pageNum=1;
+let scale=1.5;
 
-let pdfDoc = null,
-    pageNum = 1,
-    scale = 1.5,
-    canvas = document.getElementById('pdf'),
-    ctx = canvas.getContext('2d');
-
-function kontrol(){
-    let input = document.getElementById("sifre").value;
-    if(input === PASSWORD){
-        document.getElementById('viewer').style.display = "block";
-        loadPDF();
+function login(){
+    if(document.getElementById("pass").value==="LukarixYZ"){
+        document.getElementById("login").style.display="none";
+        document.getElementById("viewer").style.display="block";
+        openPDF('pdf.pdf'); // Dosya adı
     } else {
-        alert("Yanlış şifre!");
-        document.getElementById("sifre").value = "";
+        document.getElementById("err").innerText="Yanlış şifre!";
     }
 }
 
-function loadPDF(){
-    pdfjsLib.getDocument("pdf.pdf").promise.then(pdf => {
-        pdfDoc = pdf;
+function openPDF(file){
+    pageNum=1;
+    pdfjsLib.getDocument(file).promise.then(pdf=>{
+        pdfDoc=pdf;
         renderPage(pageNum);
     });
 }
 
 function renderPage(num){
-    pdfDoc.getPage(num).then(page => {
-        const viewport = page.getViewport({scale: scale});
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        page.render({canvasContext: ctx, viewport: viewport});
-        document.getElementById("pageInfo").innerText = num + " / " + pdfDoc.numPages;
+    pdfDoc.getPage(num).then(page=>{
+        const canvas=document.createElement("canvas");
+        const ctx=canvas.getContext("2d");
+        const viewport=page.getViewport({scale:scale});
+        canvas.height=viewport.height;
+        canvas.width=viewport.width;
+
+        const container=document.getElementById("pdfContainer");
+        container.innerHTML="";
+        container.appendChild(canvas);
+
+        page.render({canvasContext:ctx,viewport:viewport});
+        document.getElementById("pageInfo").innerText=num+" / "+pdfDoc.numPages;
     });
 }
 
-function nextPage(){
-    if(pageNum < pdfDoc.numPages){
-        pageNum++;
-        renderPage(pageNum);
-    }
-}
-
-function prevPage(){
-    if(pageNum > 1){
-        pageNum--;
-        renderPage(pageNum);
-    }
-}
-
-function zoomIn(){
-    scale += 0.2;
-    renderPage(pageNum);
-}
-
-function zoomOut(){
-    if(scale > 0.5){
-        scale -= 0.2;
-        renderPage(pageNum);
-    }
-}
+function nextPage(){ if(pageNum < pdfDoc.numPages){ pageNum++; renderPage(pageNum); } }
+function prevPage(){ if(pageNum > 1){ pageNum--; renderPage(pageNum); } }
+function zoomIn(){ scale+=0.2; renderPage(pageNum); }
+function zoomOut(){ scale-=0.2; renderPage(pageNum); }
 </script>
 
 </body>
