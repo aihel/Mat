@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>LukarixYZ Olası sorular(dızladı</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<style>
+body {
+    margin:0;
+    font-family:Arial;
+    overflow:hidden;
+}
+
+/* GİRİŞ */
+#loginScreen {
+    position:fixed;
+    width:100%;
+    height:100%;
+    background:linear-gradient(#aee1ff,#ffffff);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    overflow:hidden;
+}
+
+#sun {
+    position:absolute;
+    width:100px;
+    height:100px;
+    background:yellow;
+    border-radius:50%;
+    top:10%;
+    animation:sunCycle 60s linear infinite;
+}
+
+@keyframes sunCycle {
+    0%{top:10%;}
+    50%{top:80%; background:orange;}
+    100%{top:10%;}
+}
+
+.sakura {
+    position:absolute;
+    width:10px;
+    height:10px;
+    background:pink;
+    border-radius:50%;
+    animation:fall linear infinite;
+}
+@keyframes fall {
+    to{ transform:translateY(100vh);}
+}
+
+#loginBox {
+    background:white;
+    padding:20px;
+    border-radius:12px;
+}
+
+/* PDF */
+#viewer {
+    display:none;
+    height:100vh;
+    background:#eee;
+}
+
+#controls {
+    position:fixed;
+    left:10px;
+    top:50%;
+    transform:translateY(-50%);
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.btn {
+    background:white;
+    border:none;
+    padding:10px;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+#zoomPanel, #drawPanel {
+    position:fixed;
+    left:60px;
+    top:50%;
+    transform:translateY(-50%);
+    background:white;
+    padding:10px;
+    border-radius:10px;
+    display:none;
+}
+
+canvas {
+    position:absolute;
+    top:0;
+    left:0;
+}
+</style>
+</head>
+
+<body>
+
+<div id="loginScreen">
+<div id="sun"></div>
+
+<div id="loginBox">
+<h3>Giriş(sifre</h3>
+<input type="password" id="password">
+<br><br>
+<button onclick="login()">Giriş yap buba</button>
+</div>
+</div>
+
+<div id="viewer">
+<div id="controls">
+<button class="btn" onclick="prevPage()">⬅️</button>
+<button class="btn" onclick="nextPage()">➡️</button>
+<button class="btn" onclick="toggleZoom()">🔍</button>
+<button class="btn" onclick="toggleDraw()">✏️</button>
+</div>
+
+<div id="zoomPanel">
+<input type="range" min="0.5" max="3" step="0.1" value="1" oninput="zoomChange(this.value)">
+</div>
+
+<div id="drawPanel">
+🎨 <input type="color" id="colorPicker"><br><br>
+📏 <input type="range" min="1" max="20" value="3" id="sizePicker"><br><br>
+<button onclick="eraser()">Silgi</button>
+<button onclick="undo()">Geri Al</button>
+</div>
+
+<canvas id="pdfCanvas"></canvas>
+<canvas id="drawCanvas"></canvas>
+</div>
+
+<script>
+let pdfDoc=null, pageNum=1, scale=1;
+let canvas=document.getElementById("pdfCanvas");
+let ctx=canvas.getContext("2d");
+
+let drawCanvas=document.getElementById("drawCanvas");
+let drawCtx=drawCanvas.getContext("2d");
+
+let drawing=false;
+let drawData={}, history={};
+
+let color="#000000";
+let size=3;
+let isEraser=false;
+
+// sakura
+for(let i=0;i<40;i++){
+ let s=document.createElement("div");
+ s.className="sakura";
+ s.style.left=Math.random()*100+"%";
+ s.style.animationDuration=(5+Math.random()*5)+"s";
+ document.body.appendChild(s);
+}
+
+// giriş
+function login(){
+ if(password.value==="LukarixYZ"){
+  loginScreen.style.display="none";
+  viewer.style.display="block";
+  loadPDF();
+ } else alert("Yanlış hacı!");
+}
+
+// PDF
+function loadPDF(){
+ pdfjsLib.getDocument("LukarixSınavMatDızlamaKolej.pdf").promise.then(pdf=>{
+  pdfDoc=pdf;
+  renderPage(pageNum);
+ });
+}
+
+function renderPage(num){
+ pdfDoc.getPage(num).then(page=>{
+  let viewport=page.getViewport({scale});
+  canvas.width=viewport.width;
+  canvas.height=viewport.height;
+
+  drawCanvas.width=viewport.width;
+  drawCanvas.height=viewport.height;
+
+  page.render({canvasContext:ctx,viewport});
+
+  drawCtx.clearRect(0,0,drawCanvas.width,drawCanvas.height);
+  if(drawData[num]){
+   let img=new Image();
+   img.src=drawData[num];
+   img.onload=()=>drawCtx.drawImage(img,0,0);
+  }
+ });
+}
+
+// sayfa
+function nextPage(){
+ if(pageNum<pdfDoc.numPages){
+  saveDraw();
+  pageNum++;
+  renderPage(pageNum);
+ }
+}
+
+function prevPage(){
+ if(pageNum>1){
+  saveDraw();
+  pageNum--;
+  renderPage(pageNum);
+ }
+}
+
+// zoom
+function toggleZoom(){
+ zoomPanel.style.display=zoomPanel.style.display==="none"?"block":"none";
+}
+function zoomChange(val){
+ scale=val;
+ renderPage(pageNum);
+}
+
+// draw panel
+function toggleDraw(){
+ drawPanel.style.display=drawPanel.style.display==="none"?"block":"none";
+ drawCanvas.style.pointerEvents="auto";
+}
+
+// ayarlar
+colorPicker.oninput=e=>{color=e.target.value; isEraser=false;}
+sizePicker.oninput=e=>{size=e.target.value;}
+
+function eraser(){
+ isEraser=true;
+}
+
+// çizim
+drawCanvas.addEventListener("mousedown",e=>{
+ drawing=true;
+ drawCtx.beginPath();
+ drawCtx.moveTo(e.offsetX,e.offsetY);
+
+ saveHistory();
+});
+
+drawCanvas.addEventListener("mouseup",()=>drawing=false);
+
+drawCanvas.addEventListener("mousemove",e=>{
+ if(!drawing) return;
+
+ drawCtx.lineWidth=size;
+ drawCtx.lineCap="round";
+
+ if(isEraser){
+  drawCtx.globalCompositeOperation="destination-out";
+ } else {
+  drawCtx.globalCompositeOperation="source-over";
+  drawCtx.strokeStyle=color;
+ }
+
+ drawCtx.lineTo(e.offsetX,e.offsetY);
+ drawCtx.stroke();
+});
+
+// history
+function saveHistory(){
+ if(!history[pageNum]) history[pageNum]=[];
+ history[pageNum].push(drawCanvas.toDataURL());
+}
+
+function undo(){
+ if(history[pageNum] && history[pageNum].length>0){
+  let last=history[pageNum].pop();
+  let img=new Image();
+  img.src=last;
+  img.onload=()=>{
+   drawCtx.clearRect(0,0,drawCanvas.width,drawCanvas.height);
+   drawCtx.drawImage(img,0,0);
+  }
+ }
+}
+
+// kayıt
+function saveDraw(){
+ drawData[pageNum]=drawCanvas.toDataURL();
+}
+</script>
+
+</body>
+</html>
